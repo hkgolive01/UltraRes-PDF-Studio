@@ -301,6 +301,10 @@
         let rendering = false;      // guard
         let sliderTimeout = null;   // debounce handle
 
+        // 新增：儲存上傳檔名（不含 .pdf）與頁數
+        let pdfFileNameBase = 'document';
+        let pdfTotalPages = 0;
+
         // --- 初始化 ---
         qualityValueDisplay.innerText = qualitySlider.value + 'x';
 
@@ -348,9 +352,14 @@
             const arrayBuffer = await file.arrayBuffer();
             pdfDataBuffer = arrayBuffer;
 
+            // 設定上傳檔名 base（去掉 .pdf）
+            pdfFileNameBase = (file.name || 'document').replace(/\.pdf$/i, '');
+
             try {
                 // load PDF
                 currentPdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                // 設定總頁數（供後面命名用）
+                pdfTotalPages = currentPdf.numPages || 0;
                 // render all pages with current scale
                 await renderAllPages(parseFloat(qualitySlider.value));
             } catch (err) {
@@ -425,11 +434,18 @@
             // small download buttons (PNG, JPG)
             const downloadPng = document.createElement('button'); downloadPng.className = 'small-btn';
             downloadPng.innerHTML = '<i class="fa-regular fa-image"></i> 下載 PNG';
-            downloadPng.addEventListener('click', () => downloadCanvasAs(canvas, 'png', `page${pageNum}.png`));
 
             const downloadJpg = document.createElement('button'); downloadJpg.className = 'small-btn';
             downloadJpg.innerHTML = '<i class="fa-regular fa-file-image"></i> 下載 JPG';
-            downloadJpg.addEventListener('click', () => downloadCanvasAs(canvas, 'jpeg', `page${pageNum}.jpg`));
+
+            // 決定檔名：若整個 PDF 只有 1 頁 -> 使用 base name (如 myfile.png)
+            // 若有多頁 -> 使用 "basename page X" (如 myfile page 2.png)
+            const base = pdfFileNameBase || 'document';
+            const pngFilename = (pdfTotalPages === 1) ? `${base}.png` : `${base} page ${pageNum}.png`;
+            const jpgFilename = (pdfTotalPages === 1) ? `${base}.jpg` : `${base} page ${pageNum}.jpg`;
+
+            downloadPng.addEventListener('click', () => downloadCanvasAs(canvas, 'png', pngFilename));
+            downloadJpg.addEventListener('click', () => downloadCanvasAs(canvas, 'jpeg', jpgFilename));
 
             // 將按鈕加入，同一行顯示，小按鈕放在 copy 旁
             actions.appendChild(copyBtn);
