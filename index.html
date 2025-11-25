@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraRes PDF Studio</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --secondary-color: #f5f7fa;
+            --success-color: #2eb85c;
+            --text-color: #2c3e50;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        body {
+            font-family: 'Segoe UI', "Microsoft JhengHei", Roboto, sans-serif;
+            background-color: #f0f2f5;
+            color: var(--text-color);
+            padding: 30px 20px;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: var(--text-color);
+        }
+
+        /* === 控制區塊樣式 === */
+        .controls-container {
+            max-width: 900px;
+            margin: 0 auto 40px;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+        }
+
+        /* 拖放上傳區 */
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--secondary-color);
+            position: relative;
+        }
+
+        .upload-area:hover, .upload-area.dragover {
+            border-color: var(--primary-color);
+            background: #ebf4ff;
+            transform: translateY(-4px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .upload-area i {
+            font-size: 48px;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .upload-area h3 {
+            margin: 0 0 10px;
+            font-size: 1.2rem;
+        }
+
+        .upload-area p {
+            margin: 0;
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        /* 隱藏原始 file input */
+        #file-input {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        /* 清晰度設定區 */
+        .quality-settings {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .quality-label {
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-grow: 1;
+            max-width: 500px;
+        }
+
+        input[type=range] {
+            flex-grow: 1;
+            height: 6px;
+            border-radius: 5px;
+            background: #dce4ec;
+            outline: none;
+            accent-color: var(--primary-color);
+        }
+
+        #quality-value {
+            font-weight: bold;
+            color: var(--primary-color);
+            min-width: 55px;
+            text-align: right;
+        }
+
+        /* === 網格預覽區 === */
+        #preview-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 26px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* 單頁卡片 */
+        .page-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .page-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .page-header {
+            padding: 12px;
+            background: white;
+            font-weight: 600;
+            text-align: center;
+            color: #718096;
+            font-size: 0.9rem;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        /* 圖片容器 */
+        .canvas-wrapper {
+            flex-grow: 1;
+            background: #f8fafc;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 10px; 
+        }
+
+        /* 關鍵：讓高清 Canvas 視覺上適應容器，但保持原始解析度 */
+        canvas {
+            width: 100% !important;
+            height: auto !important;
+            display: block;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* 按鈕區域 */
+        .actions {
+            padding: 12px 15px;
+            background: white;
+            border-top: 1px solid #f0f0f0;
+            display:flex;
+            gap:8px;
+            align-items:center;
+        }
+
+        /* 美化後的按鈕 */
+        .copy-btn {
+            background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+            color: white;
+            border: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            gap: 8px;
+            align-items:center;
+        }
+
+        .copy-btn.copied { background: linear-gradient(135deg,#2eb85c,#249d4c);} 
+
+        /* 小按鈕（下載 PNG / JPG） */
+        .small-btn {
+            background: #ffffff;
+            border: 1px solid rgba(0,0,0,0.06);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            color: #344054;
+            display:inline-flex;align-items:center;gap:6px;
+        }
+
+        .small-btn:active{transform:translateY(1px)}
+
+        /* 載入中提示 */
+        #loading {
+            text-align: center;
+            display: none;
+            margin: 30px 0;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+        }
+        #loading i {margin-right:10px}
+
+        /* 響應式調整 */
+        @media (max-width: 992px) {
+            #preview-container { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            #preview-container { grid-template-columns: 1fr; gap: 20px; }
+            .controls-container { padding: 20px; }
+            .quality-settings { flex-direction: column; align-items: flex-start; gap: 15px; }
+            .slider-container { width: 100%; max-width: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1><i class="fa-solid fa-file-pdf"></i> PDF 高清預覽與截圖工具 Pro</h1>
+
+    <div class="controls-container">
+        <div class="upload-area" id="drop-zone">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <h3>點擊或拖放 PDF 檔案至此</h3>
+            <p>支援拖曳上傳，自動開始解析</p>
+            <input type="file" id="file-input" accept="application/pdf" />
+        </div>
+
+        <div class="quality-settings">
+            <div class="quality-label">
+                <i class="fa-solid fa-sliders"></i>
+                截圖清晰度倍率 (Render Scale)
+            </div>
+            <div class="slider-container">
+                <span style="font-size: 0.9rem; color: #666;">1.0x</span>
+                <input type="range" id="quality-slider" min="1" max="10" step="0.1" value="5.0">
+                <span style="font-size: 0.9rem; color: #666;">10.0x</span>
+                <span id="quality-value">5.0x</span>
+            </div>
+            <p style="font-size: 0.8rem; color: #888; width: 100%; margin-top: 10px;">
+                <i class="fa-solid fa-circle-info"></i> 提示：倍率越高截圖越清晰，但載入速度會變慢。
+            </p>
+        </div>
+    </div>
+
+    <div id="loading">
+        <i class="fa-solid fa-spinner fa-spin"></i> 正在高清渲染 PDF，請稍候...
+    </div>
+    
+    <div id="preview-container"></div>
+
+    <script>
+        // 設定 PDF.js Worker (必須)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        const fileInput = document.getElementById('file-input');
+        const dropZone = document.getElementById('drop-zone');
+        const container = document.getElementById('preview-container');
+        const loadingIndicator = document.getElementById('loading');
+        const qualitySlider = document.getElementById('quality-slider');
+        const qualityValueDisplay = document.getElementById('quality-value');
+
+        // State
+        let currentPdf = null;      // pdfjs document
+        let pdfDataBuffer = null;   // ArrayBuffer of current file (so we can re-open quickly)
+        let rendering = false;      // guard
+        let sliderTimeout = null;   // debounce handle
+
+        // --- 初始化 ---
+        qualityValueDisplay.innerText = qualitySlider.value + 'x';
+
+        // 事件：滑桿即時更新數值顯示並（若已載入檔案）觸發重新渲染
+        qualitySlider.addEventListener('input', function() {
+            const v = parseFloat(this.value).toFixed(1);
+            qualityValueDisplay.innerText = v + 'x';
+
+            // 若已有 PDF，延遲 300ms 後重新渲染（避免過度頻繁）
+            if (currentPdf) {
+                if (sliderTimeout) clearTimeout(sliderTimeout);
+                sliderTimeout = setTimeout(() => {
+                    reRenderWithScale(parseFloat(v));
+                }, 300);
+            }
+        });
+
+        // 檔案選擇（點擊）
+        fileInput.addEventListener('change', function(e) {
+            const f = e.target.files && e.target.files[0];
+            if (f) handleFile(f);
+        });
+
+        // Drag & Drop
+        ['dragenter','dragover','dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, preventDefaults, false));
+        function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+
+        ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, ()=> dropZone.classList.add('dragover'), false));
+        ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, ()=> dropZone.classList.remove('dragover'), false));
+
+        dropZone.addEventListener('drop', function(e){
+            const dt = e.dataTransfer; const files = dt.files; if (files && files[0]) handleFile(files[0]);
+        });
+
+        // Core: 處理上傳的檔案
+        async function handleFile(file) {
+            if (!file || file.type !== 'application/pdf') { alert('請上傳 PDF 檔案'); return; }
+
+            // reset
+            container.innerHTML = '';
+            loadingIndicator.style.display = 'block';
+            fileInput.disabled = true; qualitySlider.disabled = true;
+
+            // read into buffer for reuse
+            const arrayBuffer = await file.arrayBuffer();
+            pdfDataBuffer = arrayBuffer;
+
+            try {
+                // load PDF
+                currentPdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                // render all pages with current scale
+                await renderAllPages(parseFloat(qualitySlider.value));
+            } catch (err) {
+                console.error(err); alert('無法解析 PDF 檔案：' + (err.message || err));
+            } finally {
+                loadingIndicator.style.display = 'none';
+                fileInput.disabled = false; qualitySlider.disabled = false;
+                // clear file input so same file can be reselected later
+                fileInput.value = '';
+            }
+        }
+
+        // 重新渲染（從已載入的 currentPdf）
+        async function reRenderWithScale(scale) {
+            if (!currentPdf) return;
+            // prevent overlapping renders
+            if (rendering) return;
+            try {
+                rendering = true;
+                container.innerHTML = '';
+                loadingIndicator.style.display = 'block';
+                await renderAllPages(scale);
+            } catch (e) {
+                console.error(e);
+            } finally {
+                loadingIndicator.style.display = 'none';
+                rendering = false;
+            }
+        }
+
+        // 渲染所有頁面
+        async function renderAllPages(scale) {
+            const total = currentPdf.numPages;
+            for (let i = 1; i <= total; i++) {
+                await renderPage(currentPdf, i, scale);
+            }
+        }
+
+        // 單頁渲染並加入介面（包含複製與下載按鈕）
+        async function renderPage(pdf, pageNum, scale) {
+            const page = await pdf.getPage(pageNum);
+
+            // 計算 viewport（scale 由滑桿決定）
+            const viewport = page.getViewport({ scale: scale });
+            const dpr = window.devicePixelRatio || 1;
+
+            // 建立卡片
+            const card = document.createElement('div'); card.className = 'page-card';
+            const header = document.createElement('div'); header.className = 'page-header'; header.textContent = `Page ${pageNum}`;
+            const canvasWrapper = document.createElement('div'); canvasWrapper.className = 'canvas-wrapper';
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 設定實際像素，並顯示為 CSS 大小（保留高清來源）
+            canvas.width = Math.floor(viewport.width * dpr);
+            canvas.height = Math.floor(viewport.height * dpr);
+            canvas.style.width = Math.floor(viewport.width) + 'px';
+            canvas.style.height = Math.floor(viewport.height) + 'px';
+
+            // 把 context 放大，讓 PDF.js 在高解析度下正確渲染
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+            canvasWrapper.appendChild(canvas);
+
+            const actions = document.createElement('div'); actions.className = 'actions';
+
+            // copy 按鈕
+            const copyBtn = document.createElement('button'); copyBtn.className = 'copy-btn';
+            copyBtn.innerHTML = '<i class="fa-solid fa-camera"></i> 截圖到剪貼簿';
+            copyBtn.addEventListener('click', () => copyToClipboard(canvas, copyBtn));
+
+            // small download buttons (PNG, JPG)
+            const downloadPng = document.createElement('button'); downloadPng.className = 'small-btn';
+            downloadPng.innerHTML = '<i class="fa-regular fa-image"></i> 下載 PNG';
+            downloadPng.addEventListener('click', () => downloadCanvasAs(canvas, 'png', `page${pageNum}.png`));
+
+            const downloadJpg = document.createElement('button'); downloadJpg.className = 'small-btn';
+            downloadJpg.innerHTML = '<i class="fa-regular fa-file-image"></i> 下載 JPG';
+            downloadJpg.addEventListener('click', () => downloadCanvasAs(canvas, 'jpeg', `page${pageNum}.jpg`));
+
+            // 將按鈕加入，同一行顯示，小按鈕放在 copy 旁
+            actions.appendChild(copyBtn);
+            // spacer
+            const spacer = document.createElement('div'); spacer.style.flex = '1'; actions.appendChild(spacer);
+            actions.appendChild(downloadPng);
+            actions.appendChild(downloadJpg);
+
+            card.appendChild(header);
+            card.appendChild(canvasWrapper);
+            card.appendChild(actions);
+            container.appendChild(card);
+
+            // 開始渲染
+            await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+        }
+
+        // 將 canvas 內容複製到剪貼簿
+        async function copyToClipboard(canvas, button) {
+            const original = button.innerHTML;
+            try {
+                button.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 處理中...';
+                // toBlob 需要 callback，包裝成 Promise
+                const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 1.0));
+                if (!blob) throw new Error('Blob 建立失敗');
+
+                if (navigator.clipboard && window.ClipboardItem) {
+                    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+                    button.innerHTML = '<i class="fa-solid fa-check"></i> 已複製高清圖！';
+                    button.classList.add('copied');
+                    setTimeout(()=>{ button.innerHTML = original; button.classList.remove('copied'); }, 2000);
+                } else {
+                    // fallback：開新分頁供手動複製
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                    button.innerHTML = original;
+                    alert('您的瀏覽器不支援直接複製圖片到剪貼簿，已在新分頁開啟圖片以便手動複製。');
+                }
+            } catch (err) {
+                console.error(err);
+                button.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 複製失敗';
+                setTimeout(()=>{ button.innerHTML = original; }, 2000);
+                alert('複製失敗，請確認瀏覽器支援 Clipboard API 並在 HTTPS/localhost 環境下執行。');
+            }
+        }
+
+        // 下載 canvas 為 PNG 或 JPG
+        async function downloadCanvasAs(canvas, type = 'png', filename = 'image.png') {
+            const mime = type === 'png' ? 'image/png' : 'image/jpeg';
+            const quality = type === 'png' ? 1.0 : 0.92;
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, mime, quality));
+            if (!blob) { alert('無法產生檔案'); return; }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(()=> URL.revokeObjectURL(url), 1000);
+        }
+
+    </script>
+</body>
+</html>
