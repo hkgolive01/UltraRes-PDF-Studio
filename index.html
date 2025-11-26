@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,7 +54,8 @@
             position: relative;
         }
 
-        .upload-area:hover, .upload-area.dragover {
+        .upload-area:hover,
+        .upload-area.dragover {
             border-color: var(--primary-color);
             background: #ebf4ff;
             transform: translateY(-4px);
@@ -148,7 +150,7 @@
             display: flex;
             flex-direction: column;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .page-card:hover {
@@ -175,7 +177,7 @@
             align-items: center;
             position: relative;
             overflow: hidden;
-            padding: 10px; 
+            padding: 10px;
         }
 
         /* 關鍵：讓高清 Canvas 視覺上適應容器，但保持原始解析度 */
@@ -183,7 +185,7 @@
             width: 100% !important;
             height: auto !important;
             display: block;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         /* 按鈕區域 */
@@ -191,9 +193,9 @@
             padding: 12px 15px;
             background: white;
             border-top: 1px solid #f0f0f0;
-            display:flex;
-            gap:8px;
-            align-items:center;
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
 
         /* 美化後的按鈕 */
@@ -208,24 +210,30 @@
             font-weight: 600;
             display: inline-flex;
             gap: 8px;
-            align-items:center;
+            align-items: center;
         }
 
-        .copy-btn.copied { background: linear-gradient(135deg,#2eb85c,#249d4c);} 
+        .copy-btn.copied {
+            background: linear-gradient(135deg, #2eb85c, #249d4c);
+        }
 
         /* 小按鈕（下載 PNG / JPG） */
         .small-btn {
             background: #ffffff;
-            border: 1px solid rgba(0,0,0,0.06);
+            border: 1px solid rgba(0, 0, 0, 0.06);
             padding: 8px 10px;
             border-radius: 8px;
             font-size: 12px;
             cursor: pointer;
             color: #344054;
-            display:inline-flex;align-items:center;gap:6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
         }
 
-        .small-btn:active{transform:translateY(1px)}
+        .small-btn:active {
+            transform: translateY(1px)
+        }
 
         /* 載入中提示 */
         #loading {
@@ -235,20 +243,42 @@
             font-size: 1.1rem;
             color: var(--primary-color);
         }
-        #loading i {margin-right:10px}
+
+        #loading i {
+            margin-right: 10px
+        }
 
         /* 響應式調整 */
         @media (max-width: 992px) {
-            #preview-container { grid-template-columns: repeat(2, 1fr); }
+            #preview-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
+
         @media (max-width: 600px) {
-            #preview-container { grid-template-columns: 1fr; gap: 20px; }
-            .controls-container { padding: 20px; }
-            .quality-settings { flex-direction: column; align-items: flex-start; gap: 15px; }
-            .slider-container { width: 100%; max-width: none; }
+            #preview-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .controls-container {
+                padding: 20px;
+            }
+
+            .quality-settings {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+
+            .slider-container {
+                width: 100%;
+                max-width: none;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <h1><i class="fa-solid fa-file-pdf"></i> PDF 高清預覽與截圖工具 Pro</h1>
@@ -281,7 +311,7 @@
     <div id="loading">
         <i class="fa-solid fa-spinner fa-spin"></i> 正在高清渲染 PDF，請稍候...
     </div>
-    
+
     <div id="preview-container"></div>
 
     <script>
@@ -309,7 +339,7 @@
         qualityValueDisplay.innerText = qualitySlider.value + 'x';
 
         // 事件：滑桿即時更新數值顯示並（若已載入檔案）觸發重新渲染
-        qualitySlider.addEventListener('input', function() {
+        qualitySlider.addEventListener('input', function () {
             const v = parseFloat(this.value).toFixed(1);
             qualityValueDisplay.innerText = v + 'x';
 
@@ -323,19 +353,19 @@
         });
 
         // 檔案選擇（點擊）
-        fileInput.addEventListener('change', function(e) {
+        fileInput.addEventListener('change', function (e) {
             const f = e.target.files && e.target.files[0];
             if (f) handleFile(f);
         });
 
         // Drag & Drop
-        ['dragenter','dragover','dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, preventDefaults, false));
-        function preventDefaults(e){ e.preventDefault(); e.stopPropagation(); }
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, preventDefaults, false));
+        function preventDefaults(e) { e.preventDefault(); e.stopPropagation(); }
 
-        ['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, ()=> dropZone.classList.add('dragover'), false));
-        ['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, ()=> dropZone.classList.remove('dragover'), false));
+        ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.add('dragover'), false));
+        ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, () => dropZone.classList.remove('dragover'), false));
 
-        dropZone.addEventListener('drop', function(e){
+        dropZone.addEventListener('drop', function (e) {
             const dt = e.dataTransfer; const files = dt.files; if (files && files[0]) handleFile(files[0]);
         });
 
@@ -357,7 +387,7 @@
 
             try {
                 // load PDF
-                currentPdf = await pdfjsLib.getDocument({data: arrayBuffer}).promise;
+                currentPdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
                 // 設定總頁數（供後面命名用）
                 pdfTotalPages = currentPdf.numPages || 0;
                 // render all pages with current scale
@@ -411,15 +441,21 @@
             const header = document.createElement('div'); header.className = 'page-header'; header.textContent = `Page ${pageNum}`;
             const canvasWrapper = document.createElement('div'); canvasWrapper.className = 'canvas-wrapper';
             const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
+            // 1. 禁用 alpha 通道 (這能顯著提升效能並消除部分透明黑邊問題)
+            const ctx = canvas.getContext('2d', { alpha: false });
 
-            // 設定實際像素，並顯示為 CSS 大小（保留高清來源）
-            canvas.width = Math.floor(viewport.width * dpr);
-            canvas.height = Math.floor(viewport.height * dpr);
-            canvas.style.width = Math.floor(viewport.width) + 'px';
-            canvas.style.height = Math.floor(viewport.height) + 'px';
+            // 2. 改用 Math.ceil (向上取整) 確保畫布永遠大於等於內容，避免內容被切掉
+            canvas.width = Math.ceil(viewport.width * dpr);
+            canvas.height = Math.ceil(viewport.height * dpr);
+            canvas.style.width = Math.ceil(viewport.width) + 'px';
+            canvas.style.height = Math.ceil(viewport.height) + 'px';
 
-            // 把 context 放大，讓 PDF.js 在高解析度下正確渲染
+            // 3. 【關鍵修復】在繪製 PDF 前，先將整張畫布填滿白色
+            // 這樣即使邊緣有 1px 的計算誤差，顯示的也是白色背景，而不是黑線
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 把 context 放大
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
             canvasWrapper.appendChild(canvas);
@@ -476,7 +512,7 @@
                     await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
                     button.innerHTML = '<i class="fa-solid fa-check"></i> 已複製高清圖！';
                     button.classList.add('copied');
-                    setTimeout(()=>{ button.innerHTML = original; button.classList.remove('copied'); }, 2000);
+                    setTimeout(() => { button.innerHTML = original; button.classList.remove('copied'); }, 2000);
                 } else {
                     // fallback：開新分頁供手動複製
                     const url = URL.createObjectURL(blob);
@@ -487,7 +523,7 @@
             } catch (err) {
                 console.error(err);
                 button.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> 複製失敗';
-                setTimeout(()=>{ button.innerHTML = original; }, 2000);
+                setTimeout(() => { button.innerHTML = original; }, 2000);
                 alert('複製失敗，請確認瀏覽器支援 Clipboard API 並在 HTTPS/localhost 環境下執行。');
             }
         }
@@ -500,9 +536,10 @@
             if (!blob) { alert('無法產生檔案'); return; }
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
-            setTimeout(()=> URL.revokeObjectURL(url), 1000);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
         }
 
     </script>
 </body>
+
 </html>
